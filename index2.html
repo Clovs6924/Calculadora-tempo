@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Tempo</title>
+    <style>
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #000000; 
+            color: #32CD32; 
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container, .login-container, .register-container, .admin-container {
+            background: #1e1e1e; 
+            border-radius: 10px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.5);
+            padding: 30px;
+            width: 100%;
+            max-width: 450px;
+            display: none;
+            box-sizing: border-box;
+        }
+
+        .container.show, .login-container.show, .register-container.show, .admin-container.show {
+            display: block;
+        }
+
+        h2 {
+            color: #32CD32; 
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        select {
+            font-size: 16px;
+        }
+
+        
+        @media (max-width: 500px) {
+            .container, .login-container, .register-container, .admin-container {
+                padding: 20px;
+                width: 90%;
+            }
+        }
+
+        
+        #historico-pesquisas {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+
+        #historico-pesquisas div {
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #2c2c2c; 
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #historico-pesquisas button {
+            background-color: #FF6347;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        #historico-pesquisas button:hover {
+            background-color: #FF4500;
+        }
+
+        
+        head > title {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="login-container show">
+        <h2>Login</h2>
+        <input type="text" id="login-username" placeholder="Nome de usuário" required>
+        <input type="password" id="login-password" placeholder="Senha" required>
+        <button onclick="logar()">Entrar</button>
+        <button onclick="mostrarRegistro()">Registrar-se</button>
+    </div>
+
+    
+    <div class="register-container">
+        <h2>Registrar</h2>
+        <input type="text" id="register-username" placeholder="Nome de usuário" required>
+        <input type="password" id="register-password" placeholder="Senha" required>
+        <button onclick="registrar()">Registrar</button>
+        <button onclick="mostrarLogin()">Já tem uma conta? Faça login</button>
+    </div>
+
+    
+    <div class="admin-container">
+        <h2>Admin - Histórico de Pesquisas e Gerenciamento de Usuários</h2>
+        <div id="historico-pesquisas"></div>
+        <div id="gerenciamento-usuarios"></div>
+        <button onclick="mostrarLogin()">Voltar ao Login</button>
+    </div>
+
+    
+    <div class="container" id="calculadora">
+        <h2>Calculadora de Tempo de Série</h2>
+        <label for="modo">Escolha o modo:</label>
+        <select id="modo" onchange="toggleModo()">
+            <option value="1">Tempo fixo</option>
+            <option value="2">Tempo individual</option>
+        </select>
+
+        <label for="episodios">Número de episódios:</label>
+        <input type="number" id="episodios" min="1">
+
+        <div id="fixo">
+            <label>Duração de cada episódio:</label>
+            <input type="number" id="horas" placeholder="Horas" min="0">
+            <input type="number" id="minutos" placeholder="Minutos" min="0">
+            <input type="number" id="segundos" placeholder="Segundos" min="0">
+        </div>
+
+        <div id="individual" style="display: none;">
+            <button onclick="adicionarEpisodio()">Adicionar Episódio</button>
+            <div id="episodios-lista"></div>
+        </div>
+
+        <button onclick="calcular()">Calcular</button>
+        <h3 id="resultado"></h3>
+        <button onclick="mostrarLogin()">Voltar ao Login</button>
+    </div>
+
+    <script>
+        
+        function registrar() {
+            let username = document.getElementById("register-username").value;
+            let password = document.getElementById("register-password").value;
+
+            if (username && password) {
+                let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+                
+                if (usuarios.some(usuario => usuario.username === username)) {
+                    alert("Usuário já existe.");
+                } else {
+                    usuarios.push({ username, password, tipo: "comum" }); 
+                    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                    alert("Registro realizado com sucesso!");
+                    mostrarLogin();
+                }
+            } else {
+                alert("Preencha todos os campos.");
+            }
+        }
+
+        function logar() {
+            let username = document.getElementById("login-username").value;
+            let password = document.getElementById("login-password").value;
+
+            let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            let usuario = usuarios.find(u => u.username === username && u.password === password);
+
+            
+            if (username === "L1500" && password === "angel") {
+                sessionStorage.setItem('usuario_logado', username);
+                mostrarAdmin();
+            } else if (usuario) {
+                sessionStorage.setItem('usuario_logado', username);
+                mostrarCalculadora();
+            } else {
+                alert("Usuário ou senha incorretos");
+            }
+        }
+
+        
+        function mostrarLogin() {
+            document.querySelector('.login-container').classList.add('show');
+            document.querySelector('.register-container').classList.remove('show');
+            document.querySelector('.admin-container').classList.remove('show');
+            document.getElementById("calculadora").classList.remove('show');
+        }
+
+        
+        function mostrarRegistro() {
+            document.querySelector('.login-container').classList.remove('show');
+            document.querySelector('.register-container').classList.add('show');
+        }
+
+        
+        function mostrarCalculadora() {
+            document.querySelector('.login-container').classList.remove('show');
+            document.querySelector('.register-container').classList.remove('show');
+            document.querySelector('.admin-container').classList.remove('show');
+            document.getElementById("calculadora").classList.add('show');
+        }
+
+        
+        function mostrarAdmin() {
+            document.querySelector('.login-container').classList.remove('show');
+            document.querySelector('.register-container').classList.remove('show');
+            document.querySelector('.admin-container').classList.add('show');
+
+            
+            let historico = JSON.parse(localStorage.getItem('historico_pesquisas') || '[]');
+            let lista = '';
+            historico.forEach((pesquisa, index) => {
+                lista += `
+                    <div>
+                        <strong>${pesquisa.usuario}</strong>: ${pesquisa.pesquisa}
+                        <button onclick="removerPesquisa(${index})">Excluir</button>
+                    </div>
+                `;
+            });
+            document.getElementById("historico-pesquisas").innerHTML = lista;
+
+            
+            let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            let usuariosLista = '';
+            usuarios.forEach((usuario, index) => {
+                usuariosLista += `
+                    <div>
+                        <strong>${usuario.username}</strong> - Cargo: ${usuario.tipo}
+                        ${usuario.tipo === "comum" ? `<button onclick="promoverUsuario(${index})">Promover para Admin</button>` : ""}
+                        <button onclick="removerUsuario(${index})">Excluir</button>
+                    </div>
+                `;
+            });
+            document.getElementById("gerenciamento-usuarios").innerHTML = usuariosLista;
+        }
+
+        
+        function removerPesquisa(index) {
+            let historico = JSON.parse(localStorage.getItem('historico_pesquisas') || '[]');
+            historico.splice(index, 1);
+            localStorage.setItem('historico_pesquisas', JSON.stringify(historico));
+            mostrarAdmin();  
+        }
+
+        
+        function removerUsuario(index) {
+            let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            usuarios.splice(index, 1);
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            mostrarAdmin();  
+        }
+
+        
+        function promoverUsuario(index) {
+            let usuarios = JSON.parse(localStorage.getItem('usuarios') || '[]');
+            usuarios[index].tipo = "admin"; 
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            mostrarAdmin();  
+        }
+
+        
+        function armazenarPesquisa(pesquisa) {
+            let historico = JSON.parse(localStorage.getItem('historico_pesquisas') || '[]');
+            let usuario = sessionStorage.getItem('usuario_logado');
+            historico.push({ usuario, pesquisa });
+            localStorage.setItem('historico_pesquisas', JSON.stringify(historico));
+        }
+
+        
+        function calcular() {
+            let modo = document.getElementById("modo").value;
+            let totalSegundos = 0;
+
+            if (modo === "1") {
+                let qtd = parseInt(document.getElementById("episodios").value) || 0;
+                let horas = parseInt(document.getElementById("horas").value) || 0;
+                let minutos = parseInt(document.getElementById("minutos").value) || 0;
+                let segundos = parseInt(document.getElementById("segundos").value) || 0;
+                totalSegundos = (horas * 3600 + minutos * 60 + segundos) * qtd;
+            } else {
+                
+            }
+
+            let totalHoras = Math.floor(totalSegundos / 3600);
+            let restoSegundos = totalSegundos % 3600;
+            let totalMinutos = Math.floor(restoSegundos / 60);
+            let totalSegundosFinais = restoSegundos % 60;
+
+            let resultado = `Tempo total: ${totalHoras}h ${totalMinutos}m ${totalSegundosFinais}s`;
+
+            
+            armazenarPesquisa(resultado);
+
+            document.getElementById("resultado").innerText = resultado;
+        }
+    </script>
+</body>
+</html>
